@@ -54,6 +54,38 @@ async function run() {
       res.send(services);
     });
 
+    app.get('/user',verifyJWT, async (req, res) => {
+      const users = await userCollection.find().toArray();
+      res.send(users)
+    })
+
+// admin right to show this section 
+    app.get('/admin/:email', async (req,res ) => {
+      const email = req.params.email;
+      console.log(email);
+      const user = await userCollection.findOne({ email: email });
+      const isAdmin = user.role === 'admin';
+      res.send({admin:isAdmin})
+    })
+    // create admin
+    app.put('/user/admin/:email',verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({ email: requester });
+      if (requesterAccount.role === 'admin') {
+        
+        const filter = { email: email };
+        const updateDoc = {
+          $set: {role:'admin'},
+        };
+        const result = await userCollection.updateOne(filter, updateDoc)
+        res.send(result);
+      }
+      else {
+        res.status(403).send({message:'forbidden'})
+      }
+    }) 
+
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
