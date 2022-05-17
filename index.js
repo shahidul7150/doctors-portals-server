@@ -37,7 +37,7 @@ function verifyJWT(req, res, next) {
 }
 
 // Email sending option start
-var emailSenderOptions = {
+const emailSenderOptions = {
   auth: {
     api_key: process.env.EMAIL_SENDER_KEY
   }
@@ -49,7 +49,7 @@ const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 function sendAppointmentEmail(booking) {
   const { patient,patientName,treatment,date,slot} = booking;
 
-  var email = {
+  const email = {
     from:process.env.EMAIL_SENDER,
     to: patient,
     subject:`Your Appointment for ${treatment} is on ${date} at ${slot} is confirmed`,
