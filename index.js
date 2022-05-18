@@ -46,7 +46,7 @@ const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
 function sendAppointmentEmail(booking) {
   const { patient, patientName, treatment, date, slot } = booking;
-
+console.log(patient);
   const email = {
     from: process.env.EMAIL_SENDER,
     to: patient,
@@ -207,6 +207,7 @@ async function run() {
       console.log('sending email');
 
       sendAppointmentEmail(booking);
+    
       return res.send({ success: true, result });
     });
 
