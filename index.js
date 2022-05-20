@@ -75,6 +75,37 @@ function sendAppointmentEmail(booking) {
     }
   });
 }
+function sendPaymentConfirmationEmail(booking) {
+  const { patient, patientName, treatment, date, slot } = booking;
+  console.log(patient);
+  const email = {
+    from: process.env.EMAIL_SENDER,
+    to: patient,
+    subject: `We have received your payment for  ${treatment} is on ${date} at ${slot} is confirmed`,
+    text: `Your payment for this appointment ${treatment} is on ${date} at ${slot} is confirmed`,
+    html: `
+    <div>
+    <p>Hello ${patientName}</p>
+    <h3>Thank you for your payment.</h3>
+    <h3>We have received your payment</h3>
+    <p>Looking forward to seeing you on ${date} at ${slot}.</p>
+
+    <h3>Our Address</h3>
+    <p>Barishal Sadar Road</p>
+    <p>Bangladesh</p>
+    <a href="/">Unsubscribe</a>
+    </div>
+    `,
+  };
+
+  emailClient.sendMail(email, function (err, info) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('Message sent: ', info);
+    }
+  });
+}
 // Email sending option end
 // ----------------------------
 async function run() {
@@ -91,6 +122,7 @@ async function run() {
       .collection('bookings');
     const userCollection = client.db('doctors_portal').collection('users');
     const doctorCollection = client.db('doctors_portal').collection('doctors');
+    const paymentCollection = client.db('doctors_portal').collection('payments');
 
     // verifyAdmin CREATE
     const verifyAdmin = async (req, res, next) => {
@@ -233,10 +265,26 @@ async function run() {
       return res.send({ success: true, result });
     });
 
+    app.patch('/booking/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId:payment.transactionId,
+        }
+      }
+      const result = await paymentCollection.insertOne(payment);
+      const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(updatedDoc)
+
     app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctors = await doctorCollection.find().toArray();
       res.send(doctors);
     });
+    });
+      
 
     app.post('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctor = req.body;
