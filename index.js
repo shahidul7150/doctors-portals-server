@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -38,8 +39,8 @@ function verifyJWT(req, res, next) {
 // Email sending option start
 const emailSenderOptions = {
   auth: {
-    api_key: process.env.EMAIL_SENDER_KEY
-  }
+    api_key: process.env.EMAIL_SENDER_KEY,
+  },
 };
 
 const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
@@ -103,6 +104,20 @@ async function run() {
         res.status(403).send({ message: 'forbidden' });
       }
     };
+
+    app.post('/create-payment-intent',verifyJWT, async (req, res) => {
+      const service = req.body;
+      const price = service.price;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     app.get('/service', async (req, res) => {
       const query = {};
@@ -192,12 +207,12 @@ async function run() {
       }
     });
 
-    app.get('/booking/:id',verifyJWT, async (req, res) => {
+    app.get('/booking/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const booking = await bookingCollection.findOne(query);
       res.send(booking);
-})
+    });
 
     app.post('/booking', async (req, res) => {
       const booking = req.body;
@@ -214,7 +229,7 @@ async function run() {
       console.log('sending email');
 
       sendAppointmentEmail(booking);
-    
+
       return res.send({ success: true, result });
     });
 
