@@ -277,13 +277,15 @@ async function run() {
       }
       const result = await paymentCollection.insertOne(payment);
       const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
-      res.send(updatedDoc)
-
+      
+      sendPaymentConfirmationEmail(booking)
+      res.send(updatedBooking)
+    });
     app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctors = await doctorCollection.find().toArray();
       res.send(doctors);
     });
-    });
+    
       
 
     app.post('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
